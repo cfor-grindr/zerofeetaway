@@ -14,14 +14,27 @@ import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
 import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.location.LocationListener;
+import com.loopj.android.http.JsonHttpResponseHandler;
+import com.loopj.android.http.RequestParams;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.text.DateFormat;
 import java.util.Date;
+
+import cz.msebera.android.httpclient.Header;
+
+import com.zerofeetaway.EventbriteApiParams;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
 
     private static final String TAG = MainActivity.class.getSimpleName();
+
+    /** Search for results within this distance */
+    private static final String WITHIN_DISTANCE = "5mi";
 
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
@@ -63,8 +76,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected TextView mLongitudeTextView;
 
     // Labels.
-    protected String mLatitudeLabel;
-    protected String mLongitudeLabel;
     protected String mLastUpdateTimeLabel;
 
     /**
@@ -91,12 +102,42 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mLastUpdateTimeTextView = (TextView) findViewById(R.id.last_update_time_text);
 
         // Set labels.
-        mLatitudeLabel = getResources().getString(R.string.latitude_label);
-        mLongitudeLabel = getResources().getString(R.string.longitude_label);
         mLastUpdateTimeLabel = getResources().getString(R.string.last_update_label);
 
         mRequestingLocationUpdates = false;
         mLastUpdateTime = "";
+
+        // Add button handlers
+        Button searchButton = (Button) findViewById(R.id.search_button);
+        if (searchButton != null) {
+            searchButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    try {
+                        startSearch();
+                    } catch (JSONException e) {
+                        Log.e(TAG, "Error in response", e);
+                    }
+                }
+            });
+        }
+
+        if (mStartUpdatesButton != null) {
+            mStartUpdatesButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    startUpdatesButtonHandler(view);
+                }
+            });
+        }
+        if (mStopUpdatesButton != null) {
+            mStopUpdatesButton.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    stopUpdatesButtonHandler(view);
+                }
+            });
+        }
 
         // Update values using data stored in the Bundle.
         updateValuesFromBundle(savedInstanceState);
@@ -229,10 +270,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     private void updateUI() {
-        mLatitudeTextView.setText(String.format("%s: %f", mLatitudeLabel,
-                mCurrentLocation.getLatitude()));
-        mLongitudeTextView.setText(String.format("%s: %f", mLongitudeLabel,
-                mCurrentLocation.getLongitude()));
+        mLatitudeTextView.setText(String.format("%f", mCurrentLocation.getLatitude()));
+        mLongitudeTextView.setText(String.format("%f", mCurrentLocation.getLongitude()));
         mLastUpdateTimeTextView.setText(String.format("%s: %s", mLastUpdateTimeLabel,
                 mLastUpdateTime));
     }
@@ -328,5 +367,34 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         savedInstanceState.putParcelable(LOCATION_KEY, mCurrentLocation);
         savedInstanceState.putString(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
         super.onSaveInstanceState(savedInstanceState);
+    }
+
+    /**************************/
+    /****** JSON REQUEST ******/
+    /**************************/
+    public void startSearch() throws JSONException {
+
+        RequestParams params = new RequestParams();
+        params.put(EventbriteApiParams.EVENT_PARAM_LOCATION_LATITUDE, mLatitudeTextView.getText());
+        params.put(EventbriteApiParams.EVENT_PARAM_LOCATION_LONGITUDE, mLongitudeTextView.getText());
+        params.put(EventbriteApiParams.EVENT_PARAM_LOCATION_WITHIN, WITHIN_DISTANCE);
+        params.put(EventbriteApiParams.EVENT_PARAM_SORT_BY, EventbriteApiParams.EVENT_PARAM_SORT_BY_DISTANCE);
+        params.put(EventbriteApiParams.EXPAND, EventbriteApiParams.EXPAND_PARAM_VENUE);
+
+        EventbriteRestClient.get("events/search", params, new JsonHttpResponseHandler() {
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
+                Log.d(TAG, "Response is JSONObject");
+
+                // TODO: Parse response here
+            }
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
+                Log.d(TAG, "Response is JSONArray");
+
+                Log.e(TAG, "JSONArray response is not handled!");
+            }
+        });
     }
 }

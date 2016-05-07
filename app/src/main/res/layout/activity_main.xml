@@ -22,7 +22,6 @@
             android:layout_marginEnd="@dimen/small_margin"
             android:layout_marginRight="@dimen/small_margin"
             android:gravity="center"
-            android:onClick="startUpdatesButtonHandler"
             android:text="@string/start_updates" />
 
         <Button
@@ -34,25 +33,48 @@
             android:layout_marginStart="@dimen/small_margin"
             android:enabled="false"
             android:gravity="center"
-            android:onClick="stopUpdatesButtonHandler"
             android:text="@string/stop_updates" />
     </LinearLayout>
 
-    <TextView
-        android:id="@+id/latitude_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/small_margin"
-        android:layout_marginStart="@dimen/small_margin"
-        android:textSize="@dimen/default_text_size" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/latitude_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/small_margin"
+            android:layout_marginStart="@dimen/small_margin"
+            android:text="@string/latitude_label"
+            android:textSize="@dimen/default_text_size" />
+        <TextView
+            android:id="@+id/latitude_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/xsmall_margin"
+            android:layout_marginStart="@dimen/xsmall_margin"
+            android:textSize="@dimen/default_text_size" />
+    </LinearLayout>
 
-    <TextView
-        android:id="@+id/longitude_text"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="@dimen/small_margin"
-        android:layout_marginStart="@dimen/small_margin"
-        android:textSize="@dimen/default_text_size" />
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+        <TextView
+            android:id="@+id/longitude_label"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/small_margin"
+            android:layout_marginStart="@dimen/small_margin"
+            android:text="@string/longitude_label"
+            android:textSize="@dimen/default_text_size" />
+        <TextView
+            android:id="@+id/longitude_text"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginLeft="@dimen/xsmall_margin"
+            android:layout_marginStart="@dimen/xsmall_margin"
+            android:textSize="@dimen/default_text_size" />
+    </LinearLayout>
 
     <TextView
         android:id="@+id/last_update_time_text"
@@ -61,4 +83,15 @@
         android:layout_marginLeft="@dimen/small_margin"
         android:layout_marginStart="@dimen/small_margin"
         android:textSize="@dimen/default_text_size" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="@dimen/activity_vertical_margin" />
+
+    <Button
+        android:id="@+id/search_button"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
+        android:text="@string/search_button" />
 </LinearLayout>
