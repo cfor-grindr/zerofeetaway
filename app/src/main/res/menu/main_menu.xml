@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <item
+        android:id="@+id/menu_search"
+        android:orderInCategory="1"
+        android:icon="@drawable/ic_search_black_48dp"
+        android:title="@string/menu_start_search"
+        app:showAsAction="ifRoom|collapseActionView" />
+    <item
+        android:id="@+id/menu_update_location"
+        android:orderInCategory="2"
+        android:icon="@drawable/ic_update_black_48dp"
+        android:title="@string/menu_update_location"
+        app:showAsAction="ifRoom|collapseActionView"/>
+    <item
+        android:id="@+id/menu_toggle_location_polling"
+        android:orderInCategory="3"
+        android:icon="@drawable/ic_autorenew_gray_48dp"
+        android:title="@string/menu_location_poll_on"
+        app:showAsAction="ifRoom|collapseActionView"
+        />
+</menu>

@@ -11,5 +11,11 @@
     <string name="stop_updates">Stop updates</string>
     <string name="search_button">Search</string>
 
+    <string name="fetching_events_dialog">Fetching events&#8230;</string>
     <string name="loading_events_dialog">Loading events&#8230;</string>
+
+    <string name="menu_start_search">Start search</string>
+    <string name="menu_update_location">Update location</string>
+    <string name="menu_location_poll_on">Turn on location auto-update</string>
+    <string name="menu_location_poll_off">Turn off location auto-update</string>
 </resources>

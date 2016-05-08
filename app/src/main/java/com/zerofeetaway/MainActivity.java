@@ -2,14 +2,16 @@ package com.zerofeetaway;
 
 import android.app.ProgressDialog;
 import android.location.Location;
-import android.net.Uri;
+import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.util.DisplayMetrics;
+import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
@@ -30,7 +32,6 @@ import org.json.JSONObject;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
 
@@ -40,10 +41,6 @@ import com.zerofeetaway.EventbriteApiParams;
 import com.zerofeetaway.recyclerview.EventAdapter;
 import com.zerofeetaway.recyclerview.EventModel;
 import com.zerofeetaway.ui.DividerItemDecoration;
-import com.zerofeetaway.util.AsyncTask;
-import com.zerofeetaway.util.ImageCache;
-import com.zerofeetaway.util.ImageResizer;
-import com.zerofeetaway.util.Utils;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -55,8 +52,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private static final String EVENT_SEARCH = "events/search";
     private static final String EVENT_RESPONSE = "events";
-
-    private static final String IMAGE_CACHE_DIR = "images";
 
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
@@ -91,8 +86,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected Location mCurrentLocation;
 
     // UI Widgets
-    protected Button mStartUpdatesButton;
-    protected Button mStopUpdatesButton;
     protected TextView mLastUpdateTimeTextView;
     protected TextView mLatitudeTextView;
     protected TextView mLongitudeTextView;
@@ -106,6 +99,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
      */
     protected Boolean mRequestingLocationUpdates;
 
+    protected boolean mSingleUpdate;
+
     /**
      * Time when the location was updated represented as a String.
      */
@@ -114,17 +109,18 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected RecyclerView mRecyclerView;
     protected EventAdapter mAdapter;
 
-    /** Image resizer from DisplayingBitmaps sample */
-    private ImageResizer mImageResizer;
+    protected Toolbar mToolbar;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        /** Setup toolbar */
+        mToolbar = (Toolbar) findViewById(R.id.toolbar);
+        setSupportActionBar(mToolbar);
+
         // Locate the UI widgets.
-        mStartUpdatesButton = (Button) findViewById(R.id.start_updates_button);
-        mStopUpdatesButton = (Button) findViewById(R.id.stop_updates_button);
         mLatitudeTextView = (TextView) findViewById(R.id.latitude_text);
         mLongitudeTextView = (TextView) findViewById(R.id.longitude_text);
         mLastUpdateTimeTextView = (TextView) findViewById(R.id.last_update_time_text);
@@ -135,36 +131,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mRequestingLocationUpdates = false;
         mLastUpdateTime = "";
 
-        /** Button handlers */
-        Button searchButton = (Button) findViewById(R.id.search_button);
-        if (searchButton != null) {
-            searchButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    try {
-                        startSearch();
-                    } catch (JSONException e) {
-                        Log.e(TAG, "Error in response", e);
-                    }
-                }
-            });
-        }
-        if (mStartUpdatesButton != null) {
-            mStartUpdatesButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    startUpdatesButtonHandler(view);
-                }
-            });
-        }
-        if (mStopUpdatesButton != null) {
-            mStopUpdatesButton.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    stopUpdatesButtonHandler(view);
-                }
-            });
-        }
+        mSingleUpdate = false;
 
         // Update values using data stored in the Bundle.
         updateValuesFromBundle(savedInstanceState);
@@ -173,56 +140,19 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         // API.
         buildGoogleApiClient();
 
-        /** Set up ImageResizer */
-        // For the sake of simplicity, only cache one smaller resolution version of the
-        // preview image
-        final DisplayMetrics displayMetrics = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(displayMetrics);
-        final int height = displayMetrics.heightPixels;
-        final int width = displayMetrics.widthPixels;
-
-        // For now, use 1/2 of the longest width to resize image. Since the larger thumbnail in
-        // the detail fragment takes up roughly 1/4 of the screen anyway, this should suffice.
-        final int longest = (height > width ? height : width) / 2;
-
-        ImageCache.ImageCacheParams cacheParams =
-                new ImageCache.ImageCacheParams(this, IMAGE_CACHE_DIR);
-        cacheParams.setMemCacheSizePercent(0.25f); // Set memory cache to 25% of app memory
-
-        // The ImageFetcher takes care of loading images into our ImageView children asynchronously
-        mImageResizer = new ImageResizer(this, longest);
-        mImageResizer.addImageCache(getSupportFragmentManager(), cacheParams);
-        mImageResizer.setImageFadeIn(true);
-        mImageResizer.setLoadingImage(R.drawable.empty_photo);
-
         /** Set up recycler view */
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mAdapter = new EventAdapter(this);
-        mRecyclerView.addOnScrollListener(new RecyclerView.OnScrollListener() {
-            @Override
-            public void onScrollStateChanged(RecyclerView recyclerView, int scrollState) {
-                // Pause fetcher to ensure smoother scrolling when flinging
-                if (scrollState == RecyclerView.SCROLL_STATE_DRAGGING) {
-                    // Before Honeycomb pause image loading on scroll to help with performance
-                    if (!Utils.hasHoneycomb()) {
-                        mImageResizer.setPauseWork(true);
-                    }
-                } else {
-                    mImageResizer.setPauseWork(false);
-                }
-            }
-        });
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.addItemDecoration(new DividerItemDecoration(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.list_divider_h)));
     }
 
-    /**
-     * Called by the child fragments to load resized images
-     */
-    public ImageResizer getImageResizer() {
-        return mImageResizer;
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        getMenuInflater().inflate(R.menu.main_menu, menu);
+        return true;
     }
 
     /**
@@ -238,7 +168,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             if (savedInstanceState.keySet().contains(REQUESTING_LOCATION_UPDATES_KEY)) {
                 mRequestingLocationUpdates = savedInstanceState.getBoolean(
                         REQUESTING_LOCATION_UPDATES_KEY);
-                setButtonsEnabledState();
             }
 
             // Update the value of mCurrentLocation from the Bundle and update the UI to show the
@@ -301,50 +230,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     }
 
     /**
-     * Handles the Start Updates button and requests start of location updates. Does nothing if
-     * updates have already been requested.
-     */
-    public void startUpdatesButtonHandler(View view) {
-        if (!mRequestingLocationUpdates) {
-            mRequestingLocationUpdates = true;
-            setButtonsEnabledState();
-            startLocationUpdates();
-        }
-    }
-
-    /**
-     * Handles the Stop Updates button, and requests removal of location updates. Does nothing if
-     * updates were not previously requested.
-     */
-    public void stopUpdatesButtonHandler(View view) {
-        if (mRequestingLocationUpdates) {
-            mRequestingLocationUpdates = false;
-            setButtonsEnabledState();
-            stopLocationUpdates();
-        }
-    }
-
-    /**
      * Requests location updates from the FusedLocationApi.
      */
     protected void startLocationUpdates() {
         LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
                 mLocationRequest, this);
-    }
-
-    /**
-     * Ensures that only one button is enabled at any time. The Start Updates button is enabled
-     * if the user is not requesting location updates. The Stop Updates button is enabled if the
-     * user is requesting location updates.
-     */
-    private void setButtonsEnabledState() {
-        if (mRequestingLocationUpdates) {
-            mStartUpdatesButton.setEnabled(false);
-            mStopUpdatesButton.setEnabled(true);
-        } else {
-            mStartUpdatesButton.setEnabled(true);
-            mStopUpdatesButton.setEnabled(false);
-        }
     }
 
     private void updateUI() {
@@ -376,10 +266,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         if (mGoogleApiClient.isConnected() && mRequestingLocationUpdates) {
             startLocationUpdates();
         }
-
-        if (mImageResizer != null) {
-            mImageResizer.setExitTasksEarly(false);
-        }
     }
 
     @Override
@@ -389,11 +275,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         if (mGoogleApiClient.isConnected()) {
             stopLocationUpdates();
         }
-
-        if (mImageResizer != null) {
-            mImageResizer.setExitTasksEarly(true);
-            mImageResizer.flushCache();
-        }
     }
 
     @Override
@@ -401,15 +282,6 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         super.onStop();
 
         mGoogleApiClient.disconnect();
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-
-        if (mImageResizer != null) {
-            mImageResizer.closeCache();
-        }
     }
 
     /**
@@ -440,6 +312,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         updateUI();
         Toast.makeText(this, getResources().getString(R.string.location_updated_message),
                 Toast.LENGTH_SHORT).show();
+
+        if (mSingleUpdate) {
+            mSingleUpdate = false;
+            stopLocationUpdates();
+        }
     }
 
     @Override
@@ -468,10 +345,70 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         super.onSaveInstanceState(savedInstanceState);
     }
 
+    /*****************************/
+    /****** EVENT LISTENERS ******/
+    /*****************************/
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        int id = item.getItemId();
+
+        switch (id) {
+            case R.id.menu_search:
+                try {
+                    startSearch();
+                } catch (JSONException e) {
+                    Log.e(TAG, "Error in starting search!", e);
+                }
+                break;
+            case R.id.menu_update_location:
+                // Do nothing if auto-update is enabled
+                if (!mRequestingLocationUpdates) {
+                    mRequestingLocationUpdates = true;
+                    startLocationUpdates();
+
+                    mSingleUpdate = true;
+                }
+                break;
+            case R.id.menu_toggle_location_polling:
+                if (mRequestingLocationUpdates) {
+                    mRequestingLocationUpdates = false;
+                    stopLocationUpdates();
+
+                    // Update menu items
+                    item.setTitle(getString(R.string.menu_location_poll_on));
+                    item.setIcon(R.drawable.ic_autorenew_gray_48dp);
+
+                    mToolbar.getMenu().getItem(1)
+                            .setIcon(R.drawable.ic_update_black_48dp);
+                }
+                else {
+                    mRequestingLocationUpdates = true;
+                    startLocationUpdates();
+
+                    // Update menu items
+                    item.setTitle(getString(R.string.menu_location_poll_off));
+                    item.setIcon(R.drawable.ic_autorenew_black_48dp);
+
+                    mToolbar.getMenu().getItem(1)
+                            .setIcon(R.drawable.ic_update_gray_48dp);
+                }
+                break;
+        }
+
+        return super.onOptionsItemSelected(item);
+    }
+
     /**************************/
     /****** JSON REQUEST ******/
     /**************************/
     public void startSearch() throws JSONException {
+
+        final ProgressDialog progressDialog = new ProgressDialog(MainActivity.this);
+        progressDialog.setCancelable(false);
+        progressDialog.setMessage(getString(R.string.fetching_events_dialog));
+        progressDialog.setIndeterminate(true);
+        progressDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        progressDialog.show();
 
         RequestParams params = new RequestParams();
         params.put(EventbriteApiParams.EVENT_PARAM_LOCATION_LATITUDE, mLatitudeTextView.getText());
@@ -484,6 +421,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONObject response) {
                 Log.d(TAG, "Response is JSONObject");
+
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
 
                 try {
                     // TODO: Get other pages if result list > 50
@@ -498,6 +439,10 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             @Override
             public void onSuccess(int statusCode, Header[] headers, JSONArray response) {
                 Log.d(TAG, "Response is JSONArray");
+
+                if (progressDialog.isShowing()) {
+                    progressDialog.dismiss();
+                }
 
                 Log.e(TAG, "JSONArray response is not handled!");
             }
@@ -558,18 +503,21 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
 
         private EventModel createEventModel(JSONObject event) {
-            String id, name, startLocal, org, addr1, city, region, zip;
+            String id, name, startLocal, org, addr1, city, region, zip, logoUrl;
             double lat, lon;
 
-            id = name = startLocal = org = addr1 = city = region = zip = "";
+            /** Initialize failsafe values */
+            id = name = startLocal = org = addr1 = city = region = zip = logoUrl = "";
             lat = lon = 0.d;
 
+            /** Id */
             try {
                 id = event.getString(EventbriteApiParams.EVENT_FIELD_ID);
             } catch (JSONException e) {
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
 
+            /** Event name */
             try {
                 JSONObject nameObj = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_NAME);
                 name = nameObj.getString(EventbriteApiParams.EVENT_FIELD_NAME_TEXT);
@@ -577,6 +525,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
 
+            /** Event start date */
             try {
                 JSONObject start = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_START);
                 startLocal = start.getString(EventbriteApiParams.EVENT_FIELD_START_LOCAL);
@@ -584,6 +533,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
 
+            /** Event organizer */
             try {
                 JSONObject organizer = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_ORGANIZER);
                 org = organizer.getString(EventbriteApiParams.EVENT_FIELD_ORGANIZER_NAME);
@@ -591,6 +541,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
 
+            /** Event venue info */
             try {
                 JSONObject venue = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_VENUE);
                 JSONObject address = venue.getJSONObject(EventbriteApiParams.EVENT_FIELD_VENUE_ADDRESS);
@@ -603,8 +554,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             } catch (JSONException e) {
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
-            // TODO: Get image URL
-            Uri img = null;
+
+            try {
+                JSONObject logo = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_LOGO);
+                logoUrl = logo.getString(EventbriteApiParams.EVENT_FIELD_LOGO_URL);
+            } catch (JSONException e) {
+                Log.e(TASK_TAG, "Error parsing JSONObject!", e);
+            }
 
             // Fill in info obtained from parsing
             String addr2 = city + ", " + region + " " + zip;
@@ -620,7 +576,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing date!", err);
             }
 
-            return new EventModel(id, startDate, name, org, dist, addr1, addr2, img);
+            return new EventModel(id, startDate, name, org, dist, addr1, addr2, logoUrl);
         }
 
         private double haversine(double lat1, double lng1, double lat2, double lng2) {

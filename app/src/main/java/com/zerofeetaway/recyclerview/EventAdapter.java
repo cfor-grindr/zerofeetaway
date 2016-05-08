@@ -1,16 +1,14 @@
 package com.zerofeetaway.recyclerview;
 
-import android.net.Uri;
 import android.support.v7.widget.RecyclerView;
-import android.text.method.ScrollingMovementMethod;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import com.squareup.picasso.Picasso;
 import com.zerofeetaway.MainActivity;
 import com.zerofeetaway.R;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -37,16 +35,18 @@ public class EventAdapter extends RecyclerView.Adapter<EventViewHolder> {
     public void onBindViewHolder(EventViewHolder itemViewHolder, int i) {
         EventModel event = mDataset.get(i);
 
-        if (event.getThumbnail() != null) {
-            File thumbnail = new File(event.getThumbnail().getPath());
-            if (thumbnail.exists()) {
-                mParentActivity.getImageResizer().loadImage(thumbnail.getAbsolutePath(),
-                        itemViewHolder.mThumbnail);
-            }
+        if (!event.getThumbnailURL().isEmpty()) {
+            Picasso.with(mParentActivity)
+                    .load(event.getThumbnailURL())
+                    .placeholder(R.drawable.empty_photo)
+                    .error(R.drawable.empty_photo)
+                    .into(itemViewHolder.mThumbnail);
         }
         itemViewHolder.mDateView.setText(event.getDate());
         itemViewHolder.mNameView.setText(event.getEventName());
+        itemViewHolder.mNameView.setHorizontallyScrolling(true);
         itemViewHolder.mOrganizerView.setText(event.getOrganizer());
+        itemViewHolder.mOrganizerView.setHorizontallyScrolling(true);
         itemViewHolder.mAddr1View.setText(event.getAddr1());
         itemViewHolder.mAddr2View.setText(event.getAddr2());
 
