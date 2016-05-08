@@ -52,4 +52,34 @@ public class EventbriteApiParams {
     public static final String EVENT_PARAM_SORT_BY_DISTANCE = "distance";
     public static final String EVENT_PARAM_SORT_BY_BEST = "best";
 
+    /** Event response fields */
+    public static final String EVENT_FIELD_ID = "id";
+
+    public static final String EVENT_FIELD_NAME = "name";
+    // Sub-field of "name"
+    public static final String EVENT_FIELD_NAME_TEXT = "text";
+
+    public static final String EVENT_FIELD_START = "start";
+    // Sub-field of "start"
+    public static final String EVENT_FIELD_START_LOCAL = "local";
+
+    public static final String EVENT_FIELD_ORGANIZER = "organizer";
+    // Sub-field of "organizer"
+    public static final String EVENT_FIELD_ORGANIZER_NAME = "name";
+
+    public static final String EVENT_FIELD_LOGO = "logo";
+    // Sub-field of "logo"
+    public static final String EVENT_FIELD_LOGO_URL = "url";
+
+    public static final String EVENT_FIELD_VENUE = "venue";
+    // Sub-field of "venue"
+    public static final String EVENT_FIELD_VENUE_ADDRESS = "address";
+    // Sub-fields of "venue"/"address"
+    public static final String EVENT_FIELD_VENUE_ADDRESS_1 = "address_1";
+    public static final String EVENT_FIELD_VENUE_ADDRESS_2 = "address_2";
+    public static final String EVENT_FIELD_VENUE_CITY = "city";
+    public static final String EVENT_FIELD_VENUE_REGION = "region";
+    public static final String EVENT_FIELD_VENUE_ZIP = "postal_code";
+    public static final String EVENT_FIELD_VENUE_LAT = "latitude";
+    public static final String EVENT_FIELD_VENUE_LON = "longitude";
 }

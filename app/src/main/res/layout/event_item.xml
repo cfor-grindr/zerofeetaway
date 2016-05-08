@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="horizontal"
+    android:layout_width="match_parent"
+    android:layout_height="@dimen/event_item_height">
+
+    <ImageView
+        android:id="@+id/event_thumbnail"
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.3"
+        android:background="@drawable/empty_photo" />
+    <RelativeLayout
+        android:layout_width="0dp"
+        android:layout_height="match_parent"
+        android:layout_weight="0.7"
+        android:layout_marginStart="@dimen/small_margin"
+        android:layout_marginEnd="@dimen/xsmall_margin">
+        <TextView
+            android:id="@+id/event_date"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:textSize="@dimen/event_item_xsmall_text_size"
+            android:text="Day, Mon 1 4:00 PM"
+            />
+        <TextView
+            android:id="@+id/event_distance"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:textSize="@dimen/event_item_xsmall_text_size"
+            android:text="1mi"
+            />
+        <TextView
+            android:id="@+id/event_name"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/event_date"
+            style="@style/singleLineAutoscroll"
+            android:textSize="@dimen/event_item_xlarge_text_size"
+            android:textColor="@android:color/black"
+            android:text="Event name"
+            />
+        <TextView
+            android:id="@+id/event_organizer"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentBottom="true"
+            style="@style/singleLineAutoscroll"
+            android:textSize="@dimen/event_item_med_text_size"
+            android:text="Organizer"
+            />
+
+        <TextView
+            android:id="@+id/event_addr1"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@+id/event_name"
+            android:textSize="@dimen/event_item_small_text_size"
+            android:text="123 Street"
+            />
+        <TextView
+            android:id="@+id/event_addr2"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_alignParentEnd="true"
+            android:layout_below="@+id/event_addr1"
+            android:textSize="@dimen/event_item_small_text_size"
+            android:text="Anywhere, US"
+            />
+
+    </RelativeLayout>
+</LinearLayout>
