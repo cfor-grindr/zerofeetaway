@@ -13,6 +13,7 @@
 package com.zerofeetaway.location;
 
 import android.annotation.TargetApi;
+import android.graphics.Bitmap;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
@@ -41,7 +42,6 @@ public class LocationScreen extends FragmentActivity {
         webView.getSettings().setRenderPriority(WebSettings.RenderPriority.HIGH);
         webView.getSettings().setCacheMode(WebSettings.LOAD_NO_CACHE);
         webView.getSettings().setDomStorageEnabled(true);
-        webView.setWebViewClient(new WebViewClient());
         webView.setWebChromeClient(new WebChromeClient() {
             // Need to accept permissions to use the camera
             @TargetApi(Build.VERSION_CODES.LOLLIPOP)
@@ -52,6 +52,21 @@ public class LocationScreen extends FragmentActivity {
         });
         webView.getSettings().setBuiltInZoomControls(false);
         webView.loadUrl(url);
+
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageStarted(WebView view, String url, Bitmap favicon) {
+                super.onPageStarted(view, url, favicon);
+            }
+
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                view.loadUrl(url);
+                return true;
+            }
+
+        });
+
     }
 
 }

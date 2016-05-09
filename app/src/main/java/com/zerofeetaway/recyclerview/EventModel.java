@@ -1,6 +1,9 @@
 package com.zerofeetaway.recyclerview;
 
-public class EventModel {
+import android.os.Parcel;
+import android.os.Parcelable;
+
+public class EventModel implements Parcelable {
     private String mId;
     private String mDate, mName, mOrganizer;
     private String mAddr1, mAddr2;
@@ -16,6 +19,19 @@ public class EventModel {
         mDistance = dist;
         mThumbnail = img;
         mUrl = url;
+    }
+
+    /**
+     * Parcelable data restoration
+     * @param in Parcel to restore information from
+     */
+    public EventModel(Parcel in) {
+        mId = in.readString();
+        mDate = in.readString(); mName = in.readString(); mOrganizer = in.readString();
+        mAddr1 = in.readString(); mAddr2 = in.readString();
+
+        mDistance = in.readDouble();
+        mThumbnail= in.readString(); mUrl = in.readString();
     }
 
     public boolean equals(EventModel event) { return mId.equals(event.getId()); }
@@ -37,4 +53,31 @@ public class EventModel {
         mThumbnail = event.getThumbnailURL();
         mUrl = event.getUrl();
     }
+
+    /**************************/
+    /***** PARCEL METHODS *****/
+    /**************************/
+    public int describeContents() {
+        return 0;
+    }
+
+    public void writeToParcel(Parcel out, int flags) {
+        out.writeString(mId);
+        out.writeString(mDate); out.writeString(mName); out.writeString(mOrganizer);
+        out.writeString(mAddr1); out.writeString(mAddr2);
+
+        out.writeDouble(mDistance);
+        out.writeString(mThumbnail); out.writeString(mUrl);
+    }
+
+    public static final Parcelable.Creator<EventModel> CREATOR
+            = new Parcelable.Creator<EventModel>() {
+        public EventModel createFromParcel(Parcel in) {
+            return new EventModel(in);
+        }
+
+        public EventModel[] newArray(int size) {
+            return new EventModel[size];
+        }
+    };
 }

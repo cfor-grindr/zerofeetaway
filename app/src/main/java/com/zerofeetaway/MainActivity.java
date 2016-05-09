@@ -1,11 +1,16 @@
 package com.zerofeetaway;
 
 import android.app.ProgressDialog;
+import android.content.DialogInterface;
 import android.content.Intent;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
+import android.location.LocationManager;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
@@ -15,10 +20,10 @@ import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.github.amlcurran.showcaseview.ShowcaseView;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationRequest;
@@ -31,20 +36,23 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import cz.msebera.android.httpclient.Header;
 
-import com.zerofeetaway.EventbriteApiParams;
 import com.zerofeetaway.location.LocationScreen;
 import com.zerofeetaway.recyclerview.EventAdapter;
 import com.zerofeetaway.recyclerview.EventModel;
 import com.zerofeetaway.recyclerview.RecyclerItemClickListener;
 import com.zerofeetaway.ui.DividerItemDecoration;
+import com.zerofeetaway.ui.ToolbarActionItemTarget;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
         GoogleApiClient.OnConnectionFailedListener, LocationListener {
@@ -56,6 +64,8 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
     private static final String EVENT_SEARCH = "events/search";
     private static final String EVENT_RESPONSE = "events";
+
+    private static final String STATE_EVENT_LIST = "saved_event_list";
 
     /**
      * The desired interval for location updates. Inexact. Updates may be more or less frequent.
@@ -90,6 +100,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected Location mCurrentLocation;
 
     // UI Widgets
+    protected TextView mAddressTextView;
     protected TextView mLastUpdateTimeTextView;
     protected TextView mLatitudeTextView;
     protected TextView mLongitudeTextView;
@@ -104,6 +115,9 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     protected Boolean mRequestingLocationUpdates;
 
     protected boolean mSingleUpdate;
+
+    protected static boolean mShowShowcase = true;
+    protected static ShowcaseView mShowcaseView;
 
     /**
      * Time when the location was updated represented as a String.
@@ -125,6 +139,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         setSupportActionBar(mToolbar);
 
         // Locate the UI widgets.
+        mAddressTextView = (TextView) findViewById(R.id.address);
         mLatitudeTextView = (TextView) findViewById(R.id.latitude_text);
         mLongitudeTextView = (TextView) findViewById(R.id.longitude_text);
         mLastUpdateTimeTextView = (TextView) findViewById(R.id.last_update_time_text);
@@ -146,7 +161,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         /** Set up recycler view */
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
-        mAdapter = new EventAdapter(this);
+        if (savedInstanceState == null) {
+            mAdapter = new EventAdapter(this);
+        }
+        else {
+            ArrayList<EventModel> list = savedInstanceState.getParcelableArrayList(STATE_EVENT_LIST);
+            mAdapter = new EventAdapter(this, list);
+        }
         mRecyclerView.addOnItemTouchListener(
                 new RecyclerItemClickListener(this, new RecyclerItemClickListener.OnItemClickListener() {
                     @Override public void onItemClick(View view, int position) {
@@ -158,6 +179,23 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.addItemDecoration(new DividerItemDecoration(
                 ContextCompat.getDrawable(getApplicationContext(), R.drawable.list_divider_h)));
+
+        if (mShowShowcase) {
+            mShowcaseView = new ShowcaseView.Builder(this)
+                    .withNewStyleShowcase()
+                    .setTarget(new ToolbarActionItemTarget(mToolbar, R.id.menu_search))
+                    .setStyle(R.style.CustomShowcaseTheme)
+                    .setContentTitle("Navigate with Actions")
+                    .setContentText("Search: Search for events nearby\n" +
+                            "AR View: Watch event information come to life\n" +
+                            "Update Location: Update your current location\n" +
+                            "Auto-update Location: Update your location periodically")
+                    .build();
+
+            mShowcaseView.show();
+
+            mShowShowcase = false;
+        }
     }
 
     @Override
@@ -244,11 +282,32 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
      * Requests location updates from the FusedLocationApi.
      */
     protected void startLocationUpdates() {
-        LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
-                mLocationRequest, this);
+        if (checkGPS()) {
+            LocationServices.FusedLocationApi.requestLocationUpdates(mGoogleApiClient,
+                    mLocationRequest, this);
+        }
+        else {
+            Log.e(TAG, "GPS is disabled!");
+        }
     }
 
     private void updateUI() {
+        Geocoder myLocation;
+        myLocation = new Geocoder(MainActivity.this, Locale.getDefault());
+        List<Address> myList = null;
+        try {
+            myList = myLocation.getFromLocation(mCurrentLocation.getLatitude(), mCurrentLocation.getLongitude(), 1);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        Address address = myList.get(0);
+        String addressStr = "";
+        addressStr += address.getAddressLine(0) + ", ";
+        addressStr += address.getAddressLine(1) + ", ";
+        addressStr += address.getAddressLine(2);
+
+        mAddressTextView.setText(addressStr);
+
         mLatitudeTextView.setText(String.format("%f", mCurrentLocation.getLatitude()));
         mLongitudeTextView.setText(String.format("%f", mCurrentLocation.getLongitude()));
         mLastUpdateTimeTextView.setText(String.format("%s: %s", mLastUpdateTimeLabel,
@@ -349,11 +408,47 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     /**
      * Stores activity data in the Bundle.
      */
+    @Override
     public void onSaveInstanceState(Bundle savedInstanceState) {
         savedInstanceState.putBoolean(REQUESTING_LOCATION_UPDATES_KEY, mRequestingLocationUpdates);
         savedInstanceState.putParcelable(LOCATION_KEY, mCurrentLocation);
         savedInstanceState.putString(LAST_UPDATED_TIME_STRING_KEY, mLastUpdateTime);
+        savedInstanceState.putParcelableArrayList(STATE_EVENT_LIST, mAdapter.getDataset());
         super.onSaveInstanceState(savedInstanceState);
+    }
+
+    private boolean checkGPS() {
+        LocationManager locationManager = (LocationManager) getSystemService(LOCATION_SERVICE);
+        if (locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER )) {
+            Log.d(TAG, "GPS is Enabled");
+            return true;
+        }
+        else {
+            showGPSDisabledAlertToUser();
+            return false;
+        }
+    }
+
+    private void showGPSDisabledAlertToUser() {
+        AlertDialog.Builder alertDialogBuilder = new AlertDialog.Builder(this);
+        alertDialogBuilder.setMessage("GPS is disabled.\nWould you like to enable it?")
+                .setCancelable(false)
+                .setPositiveButton("Enable GPS",
+                        new DialogInterface.OnClickListener() {
+                            public void onClick(DialogInterface dialog, int id) {
+                                Intent callGPSSettingIntent = new Intent(
+                                        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                startActivity(callGPSSettingIntent);
+                            }
+                        });
+        alertDialogBuilder.setNegativeButton("Cancel",
+                new DialogInterface.OnClickListener() {
+                    public void onClick(DialogInterface dialog, int id) {
+                        dialog.cancel();
+                    }
+                });
+        AlertDialog alert = alertDialogBuilder.create();
+        alert.show();
     }
 
     /*****************************/
@@ -362,6 +457,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
         int id = item.getItemId();
+
+        // Hide showcase if showing
+        if (mShowcaseView.isShowing()) {
+            mShowcaseView.hide();
+        }
 
         switch (id) {
             case R.id.menu_search:
@@ -374,8 +474,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
             case R.id.menu_ar:
                 // Start AR activity
                 final Intent augmentIntent = new Intent(MainActivity.this, LocationScreen.class);
-                MainActivity.this.startActivity(augmentIntent);
-                MainActivity.this.finish();
+                startActivity(augmentIntent);
                 break;
             case R.id.menu_update_location:
                 // Do nothing if auto-update is enabled
@@ -395,7 +494,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     item.setTitle(getString(R.string.menu_location_poll_on));
                     item.setIcon(R.drawable.ic_autorenew_gray_48dp);
 
-                    mToolbar.getMenu().getItem(1)
+                    mToolbar.getMenu().getItem(2)
                             .setIcon(R.drawable.ic_update_black_48dp);
                 }
                 else {
@@ -406,7 +505,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     item.setTitle(getString(R.string.menu_location_poll_off));
                     item.setIcon(R.drawable.ic_autorenew_black_48dp);
 
-                    mToolbar.getMenu().getItem(1)
+                    mToolbar.getMenu().getItem(2)
                             .setIcon(R.drawable.ic_update_gray_48dp);
                 }
                 break;

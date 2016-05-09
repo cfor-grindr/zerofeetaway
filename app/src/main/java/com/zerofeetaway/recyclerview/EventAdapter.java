@@ -15,11 +15,17 @@ import java.util.Locale;
 
 public class EventAdapter extends RecyclerView.Adapter<EventViewHolder> {
 
-    private List<EventModel> mDataset;
+    private ArrayList<EventModel> mDataset;
     private MainActivity mParentActivity;
 
     public EventAdapter(MainActivity parent) {
         mDataset = new ArrayList<>();
+
+        mParentActivity = parent;
+    }
+
+    public EventAdapter(MainActivity parent, ArrayList<EventModel> list) {
+        mDataset = list;
 
         mParentActivity = parent;
     }
@@ -80,4 +86,6 @@ public class EventAdapter extends RecyclerView.Adapter<EventViewHolder> {
     public EventModel get(int position) {
         return mDataset.get(position);
     }
+
+    public ArrayList<EventModel> getDataset() { return mDataset; }
 }
