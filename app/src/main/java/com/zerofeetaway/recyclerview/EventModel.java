@@ -5,15 +5,17 @@ public class EventModel {
     private String mDate, mName, mOrganizer;
     private String mAddr1, mAddr2;
     private double mDistance;
+    private String mUrl;
 
     private String mThumbnail;
 
     public EventModel(String id, String date, String name, String org, double dist, String addr1,
-                      String addr2, String img) {
+                      String addr2, String img, String url) {
         mId = id;
         mDate = date; mName = name; mOrganizer = org; mAddr1 = addr1; mAddr2 = addr2;
         mDistance = dist;
         mThumbnail = img;
+        mUrl = url;
     }
 
     public boolean equals(EventModel event) { return mId.equals(event.getId()); }
@@ -26,11 +28,13 @@ public class EventModel {
     public String getAddr2() { return mAddr2; }
     public double getDistance() { return mDistance; }
     public String getThumbnailURL() { return mThumbnail; }
+    public String getUrl() { return mUrl; }
 
     public void update(EventModel event) {
         mDate = event.getDate(); mName = event.getEventName();
         mOrganizer = event.getOrganizer(); mAddr1 = event.getAddr1(); mAddr2 = event.getAddr2();
         mDistance = event.getDistance();
         mThumbnail = event.getThumbnailURL();
+        mUrl = event.getUrl();
     }
 }

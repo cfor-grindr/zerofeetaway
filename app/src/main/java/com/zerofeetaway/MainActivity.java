@@ -1,7 +1,9 @@
 package com.zerofeetaway;
 
 import android.app.ProgressDialog;
+import android.content.Intent;
 import android.location.Location;
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -38,8 +40,10 @@ import java.util.Locale;
 import cz.msebera.android.httpclient.Header;
 
 import com.zerofeetaway.EventbriteApiParams;
+import com.zerofeetaway.location.LocationScreen;
 import com.zerofeetaway.recyclerview.EventAdapter;
 import com.zerofeetaway.recyclerview.EventModel;
+import com.zerofeetaway.recyclerview.RecyclerItemClickListener;
 import com.zerofeetaway.ui.DividerItemDecoration;
 
 public class MainActivity extends AppCompatActivity implements GoogleApiClient.ConnectionCallbacks,
@@ -143,6 +147,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         /** Set up recycler view */
         mRecyclerView = (RecyclerView) findViewById(R.id.recycler_view);
         mAdapter = new EventAdapter(this);
+        mRecyclerView.addOnItemTouchListener(
+                new RecyclerItemClickListener(this, new RecyclerItemClickListener.OnItemClickListener() {
+                    @Override public void onItemClick(View view, int position) {
+                        openUrlForEvent(position);
+                    }
+                })
+        );
         mRecyclerView.setLayoutManager(new LinearLayoutManager(this));
         mRecyclerView.setAdapter(mAdapter);
         mRecyclerView.addItemDecoration(new DividerItemDecoration(
@@ -360,6 +371,12 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                     Log.e(TAG, "Error in starting search!", e);
                 }
                 break;
+            case R.id.menu_ar:
+                // Start AR activity
+                final Intent augmentIntent = new Intent(MainActivity.this, LocationScreen.class);
+                MainActivity.this.startActivity(augmentIntent);
+                MainActivity.this.finish();
+                break;
             case R.id.menu_update_location:
                 // Do nothing if auto-update is enabled
                 if (!mRequestingLocationUpdates) {
@@ -396,6 +413,13 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
 
         return super.onOptionsItemSelected(item);
+    }
+
+    private void openUrlForEvent(int position) {
+        String URL = mAdapter.get(position).getUrl();
+        Intent browserIntent = new Intent(Intent.ACTION_VIEW);
+        browserIntent.setData(Uri.parse(URL));
+        startActivity(browserIntent);
     }
 
     /**************************/
@@ -503,11 +527,11 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
         }
 
         private EventModel createEventModel(JSONObject event) {
-            String id, name, startLocal, org, addr1, city, region, zip, logoUrl;
+            String id, name, startLocal, org, addr1, city, region, zip, logoUrl, url;
             double lat, lon;
 
-            /** Initialize failsafe values */
-            id = name = startLocal = org = addr1 = city = region = zip = logoUrl = "";
+            /** Initialize fail-safe values */
+            id = name = startLocal = org = addr1 = city = region = zip = logoUrl = url = "";
             lat = lon = 0.d;
 
             /** Id */
@@ -555,9 +579,17 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
 
+            /** Event logo */
             try {
                 JSONObject logo = event.getJSONObject(EventbriteApiParams.EVENT_FIELD_LOGO);
                 logoUrl = logo.getString(EventbriteApiParams.EVENT_FIELD_LOGO_URL);
+            } catch (JSONException e) {
+                Log.e(TASK_TAG, "Error parsing JSONObject!", e);
+            }
+
+            /** Event URL */
+            try {
+                url = event.getString(EventbriteApiParams.EVENT_FIELD_URL);
             } catch (JSONException e) {
                 Log.e(TASK_TAG, "Error parsing JSONObject!", e);
             }
@@ -576,7 +608,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
                 Log.e(TASK_TAG, "Error parsing date!", err);
             }
 
-            return new EventModel(id, startDate, name, org, dist, addr1, addr2, logoUrl);
+            return new EventModel(id, startDate, name, org, dist, addr1, addr2, logoUrl, url);
         }
 
         private double haversine(double lat1, double lng1, double lat2, double lng2) {

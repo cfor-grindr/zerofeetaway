@@ -76,4 +76,8 @@ public class EventAdapter extends RecyclerView.Adapter<EventViewHolder> {
         mDataset.add(event);
         return true;
     }
+
+    public EventModel get(int position) {
+        return mDataset.get(position);
+    }
 }

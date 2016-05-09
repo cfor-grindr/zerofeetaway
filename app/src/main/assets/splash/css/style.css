@@ -1,0 +1,75 @@
+@import url("https://fonts.googleapis.com/css?family=Poiret+One");
+
+.loading-splash {
+  position: absolute;
+  top: 0; right: 0; bottom: 0; left: 0;
+  background-color: #384c8b;
+  z-index: 999;
+  transition: opacity .2s .75s ease-in-out;
+}
+.loading-splash.loaded {
+  opacity: 0;
+}
+
+.container-umbel-logo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  text-align: center;
+  transform: translate3d(-50%, -50%, 0);
+}
+
+.umbel-logo {
+  width: 60px;
+  height: 90px;
+  fill: #fff;  
+}
+
+.umbel-logo .dot.animated {
+  -webkit-animation: hop .3s ease-in alternate 2;
+  transform-origin: center center;
+}
+
+.umbel-logo .dot-second.animated {
+  -webkit-animation-delay: .15s;
+}
+
+.umbel-logo .dot-third.animated {
+  -webkit-animation-delay: .3s;
+}
+
+.umbel-logo .u.animated {
+  -webkit-animation: duck .5s ease-in-out 2 alternate;
+  transform-origin: center center;
+}
+
+.loading-text {
+  margin-top: 0;
+  color: #fff;
+  font-family: 'Poiret One', Arial, sans-serif;
+}
+
+.loading-text .letter {
+  display: inline-block;
+  transition: transform .5s linear,
+              opacity   .5s linear;
+  opacity: 0;
+  transform: rotate3d(.1, 1, 0, 90deg)
+             translate3d(0, 15%, 0);
+}
+
+.loading-text .letter.visible {
+  opacity: 1;
+  transform: rotate3d(0, 0, 0, 90deg)
+             translate3d(0, 0, 0);
+}
+
+@-webkit-keyframes hop {
+  0% { transform: scale3d(1, 1, 1) translate3d(0, 0, 0); }
+ 100% { transform: scale3d(1.2, 1.2, 1) translate3d(0, -80%, 0); }
+}
+
+@-webkit-keyframes duck {
+  0% { transform:  translate3d(0, 0, 0); }
+ 100% { transform: translate3d(0, 10%, 0); }
+}

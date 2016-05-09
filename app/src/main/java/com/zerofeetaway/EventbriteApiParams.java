@@ -54,6 +54,7 @@ public class EventbriteApiParams {
 
     /** Event response fields */
     public static final String EVENT_FIELD_ID = "id";
+    public static final String EVENT_FIELD_URL = "url";
 
     public static final String EVENT_FIELD_NAME = "name";
     // Sub-field of "name"

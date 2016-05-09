@@ -8,14 +8,20 @@
         android:title="@string/menu_start_search"
         app:showAsAction="ifRoom|collapseActionView" />
     <item
-        android:id="@+id/menu_update_location"
+        android:id="@+id/menu_ar"
         android:orderInCategory="2"
+        android:icon="@drawable/ar_view"
+        android:title="@string/menu_ar_view"
+        app:showAsAction="ifRoom|collapseActionView" />
+    <item
+        android:id="@+id/menu_update_location"
+        android:orderInCategory="5"
         android:icon="@drawable/ic_update_black_48dp"
         android:title="@string/menu_update_location"
         app:showAsAction="ifRoom|collapseActionView"/>
     <item
         android:id="@+id/menu_toggle_location_polling"
-        android:orderInCategory="3"
+        android:orderInCategory="6"
         android:icon="@drawable/ic_autorenew_gray_48dp"
         android:title="@string/menu_location_poll_on"
         app:showAsAction="ifRoom|collapseActionView"
