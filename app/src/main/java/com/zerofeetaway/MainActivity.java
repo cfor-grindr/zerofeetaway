@@ -182,7 +182,7 @@ public class MainActivity extends AppCompatActivity implements GoogleApiClient.C
 
         if (mShowShowcase) {
             mShowcaseView = new ShowcaseView.Builder(this)
-                    .withNewStyleShowcase()
+                    .withHoloShowcase()
                     .setTarget(new ToolbarActionItemTarget(mToolbar, R.id.menu_search))
                     .setStyle(R.style.CustomShowcaseTheme)
                     .setContentTitle("Navigate with Actions")
